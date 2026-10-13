@@ -125,6 +125,17 @@ def _limpiar_saldos_invalidos(serie: pd.DataFrame) -> pd.DataFrame:
         # No conservar como target un ratio con denominador o numerador inválido.
         serie.loc[afectados, "morosidad_total"] = np.nan
 
+                # Identificar meses sin cartera improductiva
+        sin_cartera_improductiva = (
+            serie["cartera_improductiva"] == 0
+        )
+
+        # La cobertura no está definida cuando su denominador es cero
+        serie.loc[
+            sin_cartera_improductiva,
+            "cobertura"
+        ] = np.nan
+
     return serie
 
 
@@ -183,6 +194,10 @@ def validar_serie(serie: pd.DataFrame, *, tolerancia: float = 1e-8) -> dict:
         "meses_morosidad_verificables": int(comprobables.sum()),
         "meses_morosidad_no_verificables": int((~comprobables).sum()),
         "diferencia_maxima_morosidad": maxima,
+        "faltantes_cobertura": int(
+        serie["cobertura"].isna().sum()),
+        "meses_cartera_improductiva_cero": int(
+        (serie["cartera_improductiva"] == 0).sum()),
     }
 
 
