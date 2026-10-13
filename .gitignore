@@ -1,0 +1,21 @@
+# Datos originales y procesados
+data/raw/
+data/interim/
+data/processed/
+
+# Entornos virtuales
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Variables de entorno
+.env
+
+# Archivos del sistema
+.DS_Store
