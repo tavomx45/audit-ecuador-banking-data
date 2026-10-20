@@ -1,0 +1,26 @@
+name: morosidad-bancos-ecuador
+
+channels:
+  - conda-forge
+
+dependencies:
+  # Python
+  - python=3.12
+
+  # Procesamiento de datos
+  - numpy=2.5.3
+  - pandas=3.0.6
+  - pyarrow=25.0.0
+
+  # Lectura de archivos Excel
+  - openpyxl=3.1.5
+  - xlrd=2.0.2
+
+  # Machine Learning
+  - scikit-learn=1.9.1
+
+  # Visualización
+  - matplotlib=3.11.2
+
+  # Jupyter / VS Code
+  - ipykernel
