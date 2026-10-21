@@ -1,0 +1,105 @@
+{
+  "files": {
+    "data/raw/boletin_mensual/BOL_FIN_BCOS_SEP_09 A.xls": {
+      "sha256": "9de5fb685cdf34a68fa05d96b7a9d8358538ed2b6fd7a2aad27336100d03d826",
+      "size_bytes": 4071936
+    },
+    "data/raw/cartera_deposito/BANCOS PRIVADOS COLOCACIONES - CONSUMO ENE-DIC 2014.xlsx": {
+      "sha256": "759951cb945a34debfd1c0d51bd0e82a7970452f93365089960db6bf8727ff96",
+      "size_bytes": 722216
+    },
+    "data/raw/series_entidad/BANCO ATLANTIDA S.A. 2026_09.xlsx": {
+      "sha256": "7d4d56e42a058fff42541ec2e1baa352f93485f52146bb294e436206dfa89428",
+      "size_bytes": 2939017
+    },
+    "data/raw/series_entidad/BP AMAZONAS 2026_09.xlsx": {
+      "sha256": "55ec6c7f9cb1b0473a3881dc71720cbcb9bbd02ee116abafa03d962b4854b98f",
+      "size_bytes": 5231282
+    },
+    "data/raw/series_entidad/BP AUSTRO 2026_09.xlsx": {
+      "sha256": "89549d984e0561dae5d159f8b775750c5086e9788a08100257c7c31ca7327edc",
+      "size_bytes": 5615792
+    },
+    "data/raw/series_entidad/BP BANCO  DESARROLLO DE LOS PUEBLOS  S.A., CODESARROLLO 2026_09.xlsx": {
+      "sha256": "b007a63acc255e1e767f3d0f623faa93b20b11fa76b5cdc370db8d157222f285",
+      "size_bytes": 3007031
+    },
+    "data/raw/series_entidad/BP BOLIVARIANO 2026_09.xlsx": {
+      "sha256": "4a16a86602c75b04823ad1b05a43e99c024f1ed7c057a2f121f1aef0e6a85dfe",
+      "size_bytes": 5459245
+    },
+    "data/raw/series_entidad/BP CAPITAL 2026_09.xlsx": {
+      "sha256": "1e88208cd714171dccfd16a148b40a821702479169afccaeb1f82086760abbca",
+      "size_bytes": 4731812
+    },
+    "data/raw/series_entidad/BP CITIBANK 2026_09.xlsx": {
+      "sha256": "924357cf6bc9a7906b630c28c2f375b7cb92a4c9ca8d70887d1fd682c52bce03",
+      "size_bytes": 4207105
+    },
+    "data/raw/series_entidad/BP COMERCIAL DE MANABI 2026_09.xlsx": {
+      "sha256": "4271cee1e418adda4e17b3d3764489d71a5948c072d986bdc1642e80e92d2c1e",
+      "size_bytes": 4694902
+    },
+    "data/raw/series_entidad/BP COOPNACIONAL 2026_09.xlsx": {
+      "sha256": "724eafebdac386e4de484bebc7e3e2f5e1f709ddb40309efdf56804bf43e4422",
+      "size_bytes": 4411552
+    },
+    "data/raw/series_entidad/BP DELBANK 2026_09.xlsx": {
+      "sha256": "5e3c777631a1992a99b685ab874eb97ca489f8ea848821326459a81592d4e8ab",
+      "size_bytes": 4638382
+    },
+    "data/raw/series_entidad/BP DINERS 2026_09.xlsx": {
+      "sha256": "40bf0fcac6080b95056512983548602d8cf3da3839b848d6525453ed4427281b",
+      "size_bytes": 2361310
+    },
+    "data/raw/series_entidad/BP GENERAL RUMIÑAHUI 2026_09.xlsx": {
+      "sha256": "0272fdb8c066063ec22f7befad5308e109fad0825bd04d47c28e0ba930d477cc",
+      "size_bytes": 5577983
+    },
+    "data/raw/series_entidad/BP GUAYAQUIL 2026_09.xlsx": {
+      "sha256": "fd9a3ee3cfe5c06a8138aa62144bf4992c18fbbe3d3223cdabb84ec7ea689be9",
+      "size_bytes": 5754662
+    },
+    "data/raw/series_entidad/BP INTERNACIONAL 2026_09.xlsx": {
+      "sha256": "99297fad4d344e2e59b01c6f7229f5136497a6c2c01fbbec4f2c258dd9ce8798",
+      "size_bytes": 5595393
+    },
+    "data/raw/series_entidad/BP LITORAL 2026_09.xlsx": {
+      "sha256": "59def40fa47d59e5bf7c9802554e586782d0f1b33c9921d1f54488c4bc66ffd6",
+      "size_bytes": 4745310
+    },
+    "data/raw/series_entidad/BP LOJA 2026_09.xlsx": {
+      "sha256": "3fab710f5498e22673c752ce49b7a18bc44c68db5fb49af7ffc6fba70ff35bcf",
+      "size_bytes": 5520315
+    },
+    "data/raw/series_entidad/BP MACHALA 2026_09.xlsx": {
+      "sha256": "f567476253c73ceb9f845a78fa7ad830c1b8f5ed9f84814a4015e1538b9b4f36",
+      "size_bytes": 5392592
+    },
+    "data/raw/series_entidad/BP PACIFICO 2026_09.xlsx": {
+      "sha256": "d758f6fe31c2b6679b358d4abf996fdd7b7137d03bbb9106bc65277edaf10437",
+      "size_bytes": 6041745
+    },
+    "data/raw/series_entidad/BP PICHINCHA 2026_09.xlsx": {
+      "sha256": "cea4a8dc0aaf6ac83307880be9470116349fb3ebe0d96cfef0cbc00c7ba0cac1",
+      "size_bytes": 6316783
+    },
+    "data/raw/series_entidad/BP PROCREDIT 2026_09.xlsx": {
+      "sha256": "860df49eba50238afccf9ff38b777c6a92961d58dfe3443138f46f1f57503b4e",
+      "size_bytes": 5249647
+    },
+    "data/raw/series_entidad/BP PRODUBANCO 2026_09.xlsx": {
+      "sha256": "ee0e85ad4381d687cd44cdeb6e8995df0d4d0abaa0ebd1e5fdf47e1c91cbf9a0",
+      "size_bytes": 5992195
+    },
+    "data/raw/series_entidad/BP SOLIDARIO 2026_09.xlsx": {
+      "sha256": "290da80c6c2a8f4ddec078131e602ca48c4d1c85ef576b7eabc906199edb3332",
+      "size_bytes": 5261523
+    },
+    "data/raw/series_entidad/BP VISIONFUND ECUADOR S.A. 2026_09.xlsx": {
+      "sha256": "b471003630c8ce0e8b80e588b073985015f3c82b1ec908ed321ca9507e21c58a",
+      "size_bytes": 2114607
+    }
+  },
+  "schema_version": 1
+}
