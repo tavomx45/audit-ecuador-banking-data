@@ -78,7 +78,7 @@ def comparar_referencia(panel: pd.DataFrame) -> None:
     print("Comparación con referencia: VALIDADA")
 
 
-def guardar_resultados(panel, reporte) -> None:
+def guardar_resultados(panel, reporte, features) -> None:
     """Guarda resultados sin sobrescribir la referencia."""
 
     SALIDA_DIR.mkdir(parents=True, exist_ok=True)
@@ -96,7 +96,17 @@ def guardar_resultados(panel, reporte) -> None:
         ),
     ]
 
+
+    salidas.append(
+        (
+            PROJECT_ROOT
+            / "data/processed/rebuild/panel_features_multihorizonte.parquet",
+            lambda ruta: features.to_parquet(ruta, index=False),
+        )
+    )
+
     for destino, escribir in salidas:
+        destino.parent.mkdir(parents=True, exist_ok=True)
         temporal = destino.with_name(destino.name + ".tmp")
 
         try:
@@ -137,9 +147,74 @@ def main() -> None:
     print("\n4. COMPARACIÓN ACADÉMICA")
     comparar_referencia(panel)
 
+
+    print("\n5. INGENIERÍA DE CARACTERÍSTICAS")
+
+    from src.features import (
+        construir_targets,
+        construir_rezagos_y_variaciones,
+        construir_estadisticas_moviles,
+        construir_caracteristicas_estacionales,
+        construir_crecimiento_cartera,
+        construir_transformaciones_financieras,
+    )
+
+    features = construir_targets(panel)
+    features = construir_rezagos_y_variaciones(features)
+    features = construir_estadisticas_moviles(features)
+    features = construir_caracteristicas_estacionales(features)
+    features = construir_crecimiento_cartera(features)
+    features = construir_transformaciones_financieras(features)
+
+    print("Dimensiones:", features.shape)
+    print("Instituciones:", features["banco"].nunique())
+
+    if features.shape != (5972, 46):
+        raise ValueError(
+            "Las dimensiones del dataset no coinciden."
+        )
+
+    # Comparación con el dataset académico
+    referencia_features = (
+        PROJECT_ROOT
+        / "data/processed/panel_features_multihorizonte.parquet"
+    )
+
+    if not referencia_features.is_file():
+        raise FileNotFoundError(
+            f"No se encontró la referencia: {referencia_features}"
+        )
+
+    original_features = pd.read_parquet(referencia_features)
+
+    if set(original_features.columns) != set(features.columns):
+        raise ValueError(
+            "Las columnas de características no coinciden."
+        )
+
+    columnas = original_features.columns.tolist()
+
+    def ordenar_features(datos):
+        return (
+            datos[columnas]
+            .sort_values(["banco", "fecha"])
+            .reset_index(drop=True)
+        )
+
+    pd.testing.assert_frame_equal(
+        ordenar_features(original_features),
+        ordenar_features(features),
+        check_dtype=False,
+        check_exact=False,
+        rtol=1e-10,
+        atol=1e-8,
+    )
+
+    print("Comparación de las 46 columnas: VALIDADA")
+
     if args.write:
-        print("\n5. ALMACENAMIENTO")
-        guardar_resultados(panel, reporte)
+        print("\n6. ALMACENAMIENTO")
+        guardar_resultados(panel, reporte, features)
     else:
         print("\nModo verificación: no se escribieron archivos.")
 
