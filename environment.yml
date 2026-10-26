@@ -24,3 +24,4 @@ dependencies:
 
   # Jupyter / VS Code
   - ipykernel
+  - pytest
