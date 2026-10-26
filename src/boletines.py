@@ -8,12 +8,12 @@ No se imputan valores faltantes ni se construye todavía el target t+1.
 
 from __future__ import annotations
 
-from datetime import date, datetime
-from numbers import Real
-from pathlib import Path
 import re
 import unicodedata
 import warnings
+from datetime import date, datetime
+from numbers import Real
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -125,16 +125,11 @@ def _limpiar_saldos_invalidos(serie: pd.DataFrame) -> pd.DataFrame:
         # No conservar como target un ratio con denominador o numerador inválido.
         serie.loc[afectados, "morosidad_total"] = np.nan
 
-                # Identificar meses sin cartera improductiva
-        sin_cartera_improductiva = (
-            serie["cartera_improductiva"] == 0
-        )
+        # Identificar meses sin cartera improductiva
+        sin_cartera_improductiva = serie["cartera_improductiva"] == 0
 
         # La cobertura no está definida cuando su denominador es cero
-        serie.loc[
-            sin_cartera_improductiva,
-            "cobertura"
-        ] = np.nan
+        serie.loc[sin_cartera_improductiva, "cobertura"] = np.nan
 
     return serie
 
@@ -168,7 +163,9 @@ def validar_serie(serie: pd.DataFrame, *, tolerancia: float = 1e-8) -> dict:
     necesarias = ["cartera_bruta", "cartera_improductiva", "morosidad_total"]
     comprobables = serie[necesarias].notna().all(axis=1)
     if not comprobables.any():
-        raise ValueError("No hay meses con información suficiente para validar morosidad")
+        raise ValueError(
+            "No hay meses con información suficiente para validar morosidad"
+        )
 
     calculada = (
         serie.loc[comprobables, "cartera_improductiva"]
@@ -189,15 +186,17 @@ def validar_serie(serie: pd.DataFrame, *, tolerancia: float = 1e-8) -> dict:
         "meses": len(serie),
         "faltantes_solvencia": int(serie["solvencia"].isna().sum()),
         "faltantes_cartera_bruta": int(serie["cartera_bruta"].isna().sum()),
-        "faltantes_cartera_improductiva": int(serie["cartera_improductiva"].isna().sum()),
+        "faltantes_cartera_improductiva": int(
+            serie["cartera_improductiva"].isna().sum()
+        ),
         "faltantes_morosidad": int(serie["morosidad_total"].isna().sum()),
         "meses_morosidad_verificables": int(comprobables.sum()),
         "meses_morosidad_no_verificables": int((~comprobables).sum()),
         "diferencia_maxima_morosidad": maxima,
-        "faltantes_cobertura": int(
-        serie["cobertura"].isna().sum()),
+        "faltantes_cobertura": int(serie["cobertura"].isna().sum()),
         "meses_cartera_improductiva_cero": int(
-        (serie["cartera_improductiva"] == 0).sum()),
+            (serie["cartera_improductiva"] == 0).sum()
+        ),
     }
 
 
@@ -207,15 +206,15 @@ def extraer_serie_banco(ruta_archivo: str | Path) -> pd.DataFrame:
     if not ruta.is_file():
         raise FileNotFoundError(ruta)
 
-    hojas = pd.read_excel(
-        ruta, sheet_name=["INDICAD", "INDIC CARTERA"], header=None
-    )
+    hojas = pd.read_excel(ruta, sheet_name=["INDICAD", "INDIC CARTERA"], header=None)
     indicad = hojas["INDICAD"]
     cartera = hojas["INDIC CARTERA"]
 
     banco_indicad = _texto_normalizado(indicad.iat[1, 0])
     banco_cartera = _texto_normalizado(cartera.iat[1, 0])
-    if banco_indicad != banco_cartera or not banco_indicad.startswith(("BP ", "BANCO ")):
+    if banco_indicad != banco_cartera or not banco_indicad.startswith(
+        ("BP ", "BANCO ")
+    ):
         raise ValueError(
             f"Institución no identificada de forma consistente en {ruta.name}: "
             f"{banco_indicad!r} / {banco_cartera!r}"
@@ -241,9 +240,7 @@ def extraer_serie_banco(ruta_archivo: str | Path) -> pd.DataFrame:
     if set(financiero["fecha"]) != set(crediticio["fecha"]):
         raise ValueError(f"Las fechas de las dos hojas no coinciden: {ruta.name}")
 
-    serie = financiero.merge(
-        crediticio, on="fecha", how="inner", validate="one_to_one"
-    )
+    serie = financiero.merge(crediticio, on="fecha", how="inner", validate="one_to_one")
     serie.insert(1, "banco", banco_indicad)
     serie = serie.sort_values("fecha").reset_index(drop=True)
     serie = _limpiar_saldos_invalidos(serie)
@@ -256,11 +253,14 @@ def construir_panel(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Procesa archivos de un mismo corte y devuelve (panel, reporte de calidad)."""
     archivos = sorted(
-        p for p in Path(directorio).glob(patron)
+        p
+        for p in Path(directorio).glob(patron)
         if p.is_file() and not p.name.startswith("~$")
     )
     if not archivos:
-        raise FileNotFoundError(f"No hay archivos con patrón {patron!r} en {directorio}")
+        raise FileNotFoundError(
+            f"No hay archivos con patrón {patron!r} en {directorio}"
+        )
 
     series, reportes = [], []
     for archivo in archivos:

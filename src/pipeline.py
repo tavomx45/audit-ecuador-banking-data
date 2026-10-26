@@ -9,14 +9,11 @@ import pandas as pd
 from src.boletines import construir_panel
 from src.data_manifest import PROJECT_ROOT, verificar_manifiesto
 
-
 CORTE = "2026_09"
 
 SERIES_DIR = PROJECT_ROOT / "data/raw/series_entidad"
 
-REFERENCIA = (
-    PROJECT_ROOT / f"data/interim/panel_bancario_{CORTE}.parquet"
-)
+REFERENCIA = PROJECT_ROOT / f"data/interim/panel_bancario_{CORTE}.parquet"
 
 SALIDA_DIR = PROJECT_ROOT / "data/interim/rebuild"
 
@@ -25,8 +22,11 @@ def validar_panel(panel: pd.DataFrame) -> None:
     """Comprueba las propiedades estructurales del panel."""
 
     columnas_requeridas = {
-        "fecha", "banco", "morosidad_total",
-        "cartera_bruta", "cartera_improductiva",
+        "fecha",
+        "banco",
+        "morosidad_total",
+        "cartera_bruta",
+        "cartera_improductiva",
     }
 
     if not columnas_requeridas.issubset(panel.columns):
@@ -48,9 +48,7 @@ def comparar_referencia(panel: pd.DataFrame, ruta: Path = REFERENCIA) -> None:
     """Verifica equivalencia con la referencia académica."""
 
     if not ruta.is_file():
-        raise FileNotFoundError(
-            f"No se encontró la referencia: {ruta}"
-        )
+        raise FileNotFoundError(f"No se encontró la referencia: {ruta}")
 
     original = pd.read_parquet(ruta)
 
@@ -60,11 +58,7 @@ def comparar_referencia(panel: pd.DataFrame, ruta: Path = REFERENCIA) -> None:
     columnas = original.columns.tolist()
 
     def ordenar(df):
-        return (
-            df[columnas]
-            .sort_values(["banco", "fecha"])
-            .reset_index(drop=True)
-        )
+        return df[columnas].sort_values(["banco", "fecha"]).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(
         ordenar(original),
@@ -96,12 +90,9 @@ def guardar_resultados(
         ),
         (
             SALIDA_DIR / f"reporte_calidad_{CORTE}.csv",
-            lambda ruta: pd.DataFrame(reporte).to_csv(
-                ruta, index=False
-            ),
+            lambda ruta: pd.DataFrame(reporte).to_csv(ruta, index=False),
         ),
     ]
-
 
     salidas.append(
         (
@@ -112,14 +103,9 @@ def guardar_resultados(
     )
 
     # Directorio real por defecto; temporal durante las pruebas.
-    raiz_salida = (
-        PROJECT_ROOT
-        if output_root is None
-        else Path(output_root).resolve()
-    )
+    raiz_salida = PROJECT_ROOT if output_root is None else Path(output_root).resolve()
 
     for destino, escribir in salidas:
-
         # Las rutas existentes pertenecen al proyecto.
         # Recuperamos su parte relativa y cambiamos la raíz.
         ruta_relativa = Path(destino).relative_to(PROJECT_ROOT)
@@ -168,15 +154,14 @@ def main() -> None:
     print("\n3. VALIDACIÓN DEL PANEL")
     validar_panel(panel)
 
-
     print("\n4. INGENIERÍA DE CARACTERÍSTICAS")
 
     from src.features import (
-        construir_targets,
-        construir_rezagos_y_variaciones,
-        construir_estadisticas_moviles,
         construir_caracteristicas_estacionales,
         construir_crecimiento_cartera,
+        construir_estadisticas_moviles,
+        construir_rezagos_y_variaciones,
+        construir_targets,
         construir_transformaciones_financieras,
     )
 
@@ -215,16 +200,10 @@ def main() -> None:
 
     # Comprobar las fechas objetivo de cada horizonte
     for h in (1, 2, 3):
-        fecha_esperada = (
-            features["fecha"] + pd.DateOffset(months=h)
-        )
+        fecha_esperada = features["fecha"] + pd.DateOffset(months=h)
 
-        if not features[f"fecha_objetivo_t{h}"].equals(
-            fecha_esperada
-        ):
-            raise ValueError(
-                f"Fechas objetivo incorrectas: horizonte {h}."
-            )
+        if not features[f"fecha_objetivo_t{h}"].equals(fecha_esperada):
+            raise ValueError(f"Fechas objetivo incorrectas: horizonte {h}.")
 
     print("Validación de características: CORRECTA")
 
@@ -234,8 +213,7 @@ def main() -> None:
         comparar_referencia(panel)
 
         referencia_features = (
-            PROJECT_ROOT
-            / "data/processed/panel_features_multihorizonte.parquet"
+            PROJECT_ROOT / "data/processed/panel_features_multihorizonte.parquet"
         )
 
         comparar_referencia(features, referencia_features)

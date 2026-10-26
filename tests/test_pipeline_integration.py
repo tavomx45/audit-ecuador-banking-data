@@ -4,20 +4,19 @@ import pandas as pd
 import pytest
 
 from src import pipeline
-
 from src.features import (
-    construir_targets,
-    construir_rezagos_y_variaciones,
-    construir_estadisticas_moviles,
     construir_caracteristicas_estacionales,
     construir_crecimiento_cartera,
+    construir_estadisticas_moviles,
+    construir_rezagos_y_variaciones,
+    construir_targets,
     construir_transformaciones_financieras,
 )
-
 
 # ==================================================
 # 1. FIXTURE: PANEL BANCARIO ARTIFICIAL
 # ==================================================
+
 
 @pytest.fixture
 def panel_sintetico():
@@ -31,9 +30,7 @@ def panel_sintetico():
     }
 
     for banco, meses in calendarios.items():
-
         for posicion, mes in enumerate(meses, start=1):
-
             if banco == "BANCO A":
                 morosidad = 0.02 + 0.001 * posicion
                 cartera = 1000.0 + 100.0 * posicion
@@ -41,19 +38,21 @@ def panel_sintetico():
                 morosidad = 0.05 + 0.002 * posicion
                 cartera = 5000.0 + 150.0 * posicion
 
-            registros.append({
-                "banco": banco,
-                "fecha": pd.Timestamp(2025, mes, 1),
-                "solvencia": 0.12,
-                "liquidez": 0.25,
-                "roa": 0.01,
-                "roe": 0.08,
-                "cartera_depositos": 0.85,
-                "cartera_bruta": cartera,
-                "cartera_improductiva": cartera * morosidad,
-                "morosidad_total": morosidad,
-                "cobertura": 2.5,
-            })
+            registros.append(
+                {
+                    "banco": banco,
+                    "fecha": pd.Timestamp(2025, mes, 1),
+                    "solvencia": 0.12,
+                    "liquidez": 0.25,
+                    "roa": 0.01,
+                    "roe": 0.08,
+                    "cartera_depositos": 0.85,
+                    "cartera_bruta": cartera,
+                    "cartera_improductiva": cartera * morosidad,
+                    "morosidad_total": morosidad,
+                    "cobertura": 2.5,
+                }
+            )
 
     return pd.DataFrame(registros)
 
@@ -61,6 +60,7 @@ def panel_sintetico():
 # ==================================================
 # 2. FIXTURE: INGENIERÍA DE CARACTERÍSTICAS
 # ==================================================
+
 
 @pytest.fixture
 def datos_integrados(panel_sintetico):
@@ -85,6 +85,7 @@ def datos_integrados(panel_sintetico):
 # 3. PRUEBA DE INTEGRACIÓN DE CARACTERÍSTICAS
 # ==================================================
 
+
 def test_integracion_conserva_observaciones(datos_integrados):
     """El procesamiento conserva bancos, meses y valores."""
 
@@ -95,24 +96,14 @@ def test_integracion_conserva_observaciones(datos_integrados):
 
     assert features["banco"].nunique() == 2
 
-    assert not features.duplicated(
-        ["banco", "fecha"]
-    ).any()
+    assert not features.duplicated(["banco", "fecha"]).any()
 
     # Verificar conservación de las claves banco-mes
     claves = ["banco", "fecha"]
 
-    original = (
-        panel[claves]
-        .sort_values(claves)
-        .reset_index(drop=True)
-    )
+    original = panel[claves].sort_values(claves).reset_index(drop=True)
 
-    reconstruido = (
-        features[claves]
-        .sort_values(claves)
-        .reset_index(drop=True)
-    )
+    reconstruido = features[claves].sort_values(claves).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(
         original,
@@ -125,14 +116,11 @@ def test_integracion_conserva_observaciones(datos_integrados):
         & (features["fecha"] == pd.Timestamp("2025-01-01"))
     ].iloc[0]
 
-    assert pd.isna(
-        enero_a["target_morosidad_t1_pp"]
-    )
+    assert pd.isna(enero_a["target_morosidad_t1_pp"])
 
     # El target t+2 de enero corresponde a marzo.
     marzo_a = panel.loc[
-        (panel["banco"] == "BANCO A")
-        & (panel["fecha"] == pd.Timestamp("2025-03-01"))
+        (panel["banco"] == "BANCO A") & (panel["fecha"] == pd.Timestamp("2025-03-01"))
     ].iloc[0]
 
     assert enero_a["target_morosidad_t2_pp"] == pytest.approx(
@@ -145,18 +133,15 @@ def test_integracion_conserva_observaciones(datos_integrados):
         & (features["fecha"] == pd.Timestamp("2025-03-01"))
     ].iloc[0]
 
-    assert pd.isna(
-        marzo_features["morosidad_lag_1_pp"]
-    )
+    assert pd.isna(marzo_features["morosidad_lag_1_pp"])
 
-    assert pd.isna(
-        marzo_features["morosidad_media_3m_pp"]
-    )
+    assert pd.isna(marzo_features["morosidad_media_3m_pp"])
 
 
 # ==================================================
 # 4. PRUEBA DE INTEGRACIÓN DEL ALMACENAMIENTO
 # ==================================================
+
 
 def test_almacenamiento_en_directorio_temporal(
     datos_integrados,
@@ -166,10 +151,12 @@ def test_almacenamiento_en_directorio_temporal(
 
     panel, features = datos_integrados
 
-    reporte = pd.DataFrame({
-        "banco": ["BANCO A", "BANCO B"],
-        "observaciones": [6, 7],
-    })
+    reporte = pd.DataFrame(
+        {
+            "banco": ["BANCO A", "BANCO B"],
+            "observaciones": [6, 7],
+        }
+    )
 
     # La raíz temporal se inyecta al guardar.
 
@@ -180,19 +167,12 @@ def test_almacenamiento_en_directorio_temporal(
         output_root=tmp_path,
     )
 
-    ruta_panel = (
-        tmp_path
-        / "data/interim/rebuild/panel_bancario_2026_09.parquet"
-    )
+    ruta_panel = tmp_path / "data/interim/rebuild/panel_bancario_2026_09.parquet"
 
-    ruta_reporte = (
-        tmp_path
-        / "data/interim/rebuild/reporte_calidad_2026_09.csv"
-    )
+    ruta_reporte = tmp_path / "data/interim/rebuild/reporte_calidad_2026_09.csv"
 
     ruta_features = (
-        tmp_path
-        / "data/processed/rebuild/panel_features_multihorizonte.parquet"
+        tmp_path / "data/processed/rebuild/panel_features_multihorizonte.parquet"
     )
 
     # Comprobar que los tres archivos fueron creados.
@@ -228,4 +208,3 @@ def test_almacenamiento_en_directorio_temporal(
     )
 
     assert reporte_guardado["observaciones"].sum() == 13
-

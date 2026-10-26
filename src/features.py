@@ -2,7 +2,6 @@
 
 import pandas as pd
 
-
 HORIZONTES = (1, 2, 3)
 
 
@@ -16,10 +15,7 @@ def construir_targets(
 
     df["fecha"] = pd.to_datetime(df["fecha"])
 
-    df = (
-        df.sort_values(["banco", "fecha"])
-        .reset_index(drop=True)
-    )
+    df = df.sort_values(["banco", "fecha"]).reset_index(drop=True)
 
     # Validaciones previas
     if df.duplicated(["banco", "fecha"]).any():
@@ -35,24 +31,17 @@ def construir_targets(
     df["morosidad_pp"] = df["morosidad_total"] * 100
 
     for h in horizontes:
-
         if not isinstance(h, int) or h < 1:
             raise ValueError("Los horizontes deben ser enteros positivos.")
 
         nombre_target = f"target_morosidad_t{h}_pp"
 
         # Crear tabla auxiliar con información futura
-        futuro = df[
-            ["banco", "fecha", "morosidad_pp"]
-        ].copy()
+        futuro = df[["banco", "fecha", "morosidad_pp"]].copy()
 
-        futuro["fecha"] = (
-            futuro["fecha"] - pd.DateOffset(months=h)
-        )
+        futuro["fecha"] = futuro["fecha"] - pd.DateOffset(months=h)
 
-        futuro = futuro.rename(
-            columns={"morosidad_pp": nombre_target}
-        )
+        futuro = futuro.rename(columns={"morosidad_pp": nombre_target})
 
         # Unir por banco y mes calendario
         df = df.merge(
@@ -63,9 +52,7 @@ def construir_targets(
         )
 
         # Registrar la fecha del objetivo
-        df[f"fecha_objetivo_t{h}"] = (
-            df["fecha"] + pd.DateOffset(months=h)
-        )
+        df[f"fecha_objetivo_t{h}"] = df["fecha"] + pd.DateOffset(months=h)
 
     return df
 
@@ -98,7 +85,6 @@ def construir_rezagos_y_variaciones(
 
     # Construir rezagos históricos
     for k in rezagos:
-
         if not isinstance(k, int) or k < 1:
             raise ValueError("Los rezagos deben ser enteros positivos.")
 
@@ -107,18 +93,12 @@ def construir_rezagos_y_variaciones(
         if nombre_lag in df.columns:
             raise ValueError(f"La columna {nombre_lag} ya existe.")
 
-        historico = datos[
-            ["banco", "fecha", "morosidad_pp"]
-        ].copy()
+        historico = datos[["banco", "fecha", "morosidad_pp"]].copy()
 
         # Desplazar la fecha histórica hacia adelante
-        historico["fecha"] = (
-            historico["fecha"] + pd.DateOffset(months=k)
-        )
+        historico["fecha"] = historico["fecha"] + pd.DateOffset(months=k)
 
-        historico = historico.rename(
-            columns={"morosidad_pp": nombre_lag}
-        )
+        historico = historico.rename(columns={"morosidad_pp": nombre_lag})
 
         df = df.merge(
             historico,
@@ -128,16 +108,10 @@ def construir_rezagos_y_variaciones(
         )
 
     # Variación mensual
-    df["delta_morosidad_1m_pp"] = (
-        df["morosidad_pp"]
-        - df["morosidad_lag_1_pp"]
-    )
+    df["delta_morosidad_1m_pp"] = df["morosidad_pp"] - df["morosidad_lag_1_pp"]
 
     # Variación acumulada de tres meses
-    df["delta_morosidad_3m_pp"] = (
-        df["morosidad_pp"]
-        - df["morosidad_lag_3_pp"]
-    )
+    df["delta_morosidad_3m_pp"] = df["morosidad_pp"] - df["morosidad_lag_3_pp"]
 
     return df
 
@@ -171,43 +145,31 @@ def construir_estadisticas_moviles(
     if not df["fecha"].dt.is_month_start.all():
         raise ValueError("Las fechas deben iniciar el mes.")
 
-    if any(
-        not isinstance(w, int) or w < 1
-        for w in ventanas
-    ):
+    if any(not isinstance(w, int) or w < 1 for w in ventanas):
         raise ValueError("Las ventanas deben ser enteros positivos.")
 
     resultados = []
 
     for banco, grupo in df.groupby("banco"):
-
         # Completar el índice mensual, incluso si faltan meses
-        serie = (
-            grupo
-            .set_index("fecha")["morosidad_pp"]
-            .sort_index()
-            .asfreq("MS")
+        serie = grupo.set_index("fecha")["morosidad_pp"].sort_index().asfreq("MS")
+
+        auxiliar = pd.DataFrame(
+            {
+                "banco": banco,
+                "fecha": serie.index,
+            }
         )
 
-        auxiliar = pd.DataFrame({
-            "banco": banco,
-            "fecha": serie.index,
-        })
-
         for w in ventanas:
-
             movil = serie.rolling(
                 window=w,
                 min_periods=w,
             )
 
-            auxiliar[f"morosidad_media_{w}m_pp"] = (
-                movil.mean().to_numpy()
-            )
+            auxiliar[f"morosidad_media_{w}m_pp"] = movil.mean().to_numpy()
 
-            auxiliar[f"morosidad_std_{w}m_pp"] = (
-                movil.std(ddof=0).to_numpy()
-            )
+            auxiliar[f"morosidad_std_{w}m_pp"] = movil.std(ddof=0).to_numpy()
 
         resultados.append(auxiliar)
 
@@ -235,23 +197,16 @@ def construir_caracteristicas_estacionales(
     df = datos.copy()
 
     for h in horizontes:
-
         if not isinstance(h, int) or h < 1:
-            raise ValueError(
-                "Los horizontes deben ser enteros positivos."
-            )
+            raise ValueError("Los horizontes deben ser enteros positivos.")
 
         columna_fecha = f"fecha_objetivo_t{h}"
 
         if columna_fecha not in df.columns:
-            raise ValueError(
-                f"No existe la columna {columna_fecha}"
-            )
+            raise ValueError(f"No existe la columna {columna_fecha}")
 
         # Obtener el mes correspondiente al objetivo
-        mes = pd.to_datetime(
-            df[columna_fecha]
-        ).dt.month
+        mes = pd.to_datetime(df[columna_fecha]).dt.month
 
         # Registrar el mes objetivo
         df[f"mes_objetivo_t{h}"] = mes
@@ -294,7 +249,6 @@ def construir_crecimiento_cartera(
         raise ValueError("Las fechas deben iniciar el mes.")
 
     for k in rezagos:
-
         if not isinstance(k, int) or k < 1:
             raise ValueError("Los rezagos deben ser enteros positivos.")
 
@@ -305,17 +259,11 @@ def construir_crecimiento_cartera(
             raise ValueError("Las características ya existen.")
 
         # Recuperar los saldos históricos mediante fechas calendario
-        historico = datos[
-            ["banco", "fecha", "cartera_bruta"]
-        ].copy()
+        historico = datos[["banco", "fecha", "cartera_bruta"]].copy()
 
-        historico["fecha"] = (
-            historico["fecha"] + pd.DateOffset(months=k)
-        )
+        historico["fecha"] = historico["fecha"] + pd.DateOffset(months=k)
 
-        historico = historico.rename(
-            columns={"cartera_bruta": nombre_lag}
-        )
+        historico = historico.rename(columns={"cartera_bruta": nombre_lag})
 
         df = df.merge(
             historico,
@@ -330,9 +278,7 @@ def construir_crecimiento_cartera(
         # La tasa requiere ambos saldos estrictamente positivos
         validos = actual.gt(0) & anterior.gt(0)
 
-        df[nombre_crecimiento] = (
-            (actual / anterior - 1) * 100
-        ).where(validos)
+        df[nombre_crecimiento] = ((actual / anterior - 1) * 100).where(validos)
 
     return df
 
@@ -372,20 +318,15 @@ def construir_transformaciones_financieras(
     # ======================================
 
     for k in (1, 3):
-
         actual = df["cartera_bruta"]
         anterior = df[f"cartera_bruta_lag_{k}"]
 
         validos = (
-            actual.gt(0)
-            & anterior.gt(0)
-            & np.isfinite(actual)
-            & np.isfinite(anterior)
+            actual.gt(0) & anterior.gt(0) & np.isfinite(actual) & np.isfinite(anterior)
         )
 
         df[f"crecimiento_log_cartera_{k}m"] = np.log(
-            actual.where(validos)
-            / anterior.where(validos)
+            actual.where(validos) / anterior.where(validos)
         )
 
     # ======================================
@@ -398,16 +339,10 @@ def construir_transformaciones_financieras(
     }
 
     for original, nueva in transformaciones.items():
-
         valores = df[original]
 
-        validos = (
-            valores.ge(0)
-            & np.isfinite(valores)
-        )
+        validos = valores.ge(0) & np.isfinite(valores)
 
-        df[nueva] = np.log1p(
-            valores.where(validos)
-        )
+        df[nueva] = np.log1p(valores.where(validos))
 
     return df

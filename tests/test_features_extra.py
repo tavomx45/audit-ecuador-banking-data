@@ -5,14 +5,13 @@ import pandas as pd
 import pytest
 
 from src.features import (
-    construir_targets,
-    construir_rezagos_y_variaciones,
-    construir_estadisticas_moviles,
     construir_caracteristicas_estacionales,
     construir_crecimiento_cartera,
+    construir_estadisticas_moviles,
+    construir_rezagos_y_variaciones,
+    construir_targets,
     construir_transformaciones_financieras,
 )
-
 
 
 def seleccionar_fila(datos, banco, fecha=None):
@@ -21,9 +20,7 @@ def seleccionar_fila(datos, banco, fecha=None):
     mascara = datos["banco"].eq(banco)
 
     if fecha is not None:
-        mascara = mascara & datos["fecha"].eq(
-            pd.Timestamp(fecha)
-        )
+        mascara = mascara & datos["fecha"].eq(pd.Timestamp(fecha))
 
     seleccion = datos.loc[mascara]
 
@@ -38,16 +35,20 @@ def seleccionar_fila(datos, banco, fecha=None):
 def test_rezagos_y_variaciones_respetan_calendario():
     """Los rezagos representan meses, no posiciones de filas."""
 
-    datos = pd.DataFrame({
-        "banco": ["A", "A", "A", "B"],
-        "fecha": pd.to_datetime([
-            "2020-01-01",
-            "2020-03-01",
-            "2020-04-01",
-            "2020-02-01",
-        ]),
-        "morosidad_pp": [3.0, 5.0, 8.0, 50.0],
-    })
+    datos = pd.DataFrame(
+        {
+            "banco": ["A", "A", "A", "B"],
+            "fecha": pd.to_datetime(
+                [
+                    "2020-01-01",
+                    "2020-03-01",
+                    "2020-04-01",
+                    "2020-02-01",
+                ]
+            ),
+            "morosidad_pp": [3.0, 5.0, 8.0, 50.0],
+        }
+    )
 
     resultado = construir_rezagos_y_variaciones(datos)
 
@@ -76,40 +77,36 @@ def test_rezagos_y_variaciones_respetan_calendario():
 def test_desviacion_movil_usa_ddof_cero():
     """Verifica la desviación estándar poblacional."""
 
-    datos = pd.DataFrame({
-        "banco": ["A", "A", "A"],
-        "fecha": pd.date_range(
-            "2020-01-01", periods=3, freq="MS"
-        ),
-        "morosidad_pp": [2.0, 4.0, 6.0],
-    })
-
-    resultado = construir_estadisticas_moviles(
-        datos, ventanas=(3,)
+    datos = pd.DataFrame(
+        {
+            "banco": ["A", "A", "A"],
+            "fecha": pd.date_range("2020-01-01", periods=3, freq="MS"),
+            "morosidad_pp": [2.0, 4.0, 6.0],
+        }
     )
+
+    resultado = construir_estadisticas_moviles(datos, ventanas=(3,))
 
     marzo = resultado.iloc[-1]
 
     media_esperada = 4.0
     std_esperada = np.sqrt(8 / 3)
 
-    assert marzo["morosidad_media_3m_pp"] == pytest.approx(
-        media_esperada
-    )
+    assert marzo["morosidad_media_3m_pp"] == pytest.approx(media_esperada)
 
-    assert marzo["morosidad_std_3m_pp"] == pytest.approx(
-        std_esperada
-    )
+    assert marzo["morosidad_std_3m_pp"] == pytest.approx(std_esperada)
 
 
 def test_estacionalidad_depende_del_mes_objetivo():
     """Cada horizonte utiliza su propio mes futuro."""
 
-    panel = pd.DataFrame({
-        "banco": ["A"],
-        "fecha": pd.to_datetime(["2025-09-01"]),
-        "morosidad_total": [0.04],
-    })
+    panel = pd.DataFrame(
+        {
+            "banco": ["A"],
+            "fecha": pd.to_datetime(["2025-09-01"]),
+            "morosidad_total": [0.04],
+        }
+    )
 
     datos = construir_targets(panel)
 
@@ -118,7 +115,6 @@ def test_estacionalidad_depende_del_mes_objetivo():
     fila = resultado.iloc[0]
 
     for h, mes_esperado in [(1, 10), (2, 11), (3, 12)]:
-
         assert fila[f"mes_objetivo_t{h}"] == mes_esperado
 
         seno = fila[f"mes_sin_t{h}"]
@@ -139,20 +135,22 @@ def test_estacionalidad_depende_del_mes_objetivo():
 def test_crecimiento_cartera_controla_meses_y_ceros():
     """Comprueba los crecimientos y los saldos inválidos."""
 
-    datos = pd.DataFrame({
-        "banco": ["A", "A", "A", "B", "C", "C"],
-        "fecha": pd.to_datetime([
-            "2020-01-01",
-            "2020-03-01",
-            "2020-04-01",
-            "2020-02-01",
-            "2020-01-01",
-            "2020-02-01",
-        ]),
-        "cartera_bruta": [
-            100.0, 121.0, 133.1, 500.0, 0.0, 100.0
-        ],
-    })
+    datos = pd.DataFrame(
+        {
+            "banco": ["A", "A", "A", "B", "C", "C"],
+            "fecha": pd.to_datetime(
+                [
+                    "2020-01-01",
+                    "2020-03-01",
+                    "2020-04-01",
+                    "2020-02-01",
+                    "2020-01-01",
+                    "2020-02-01",
+                ]
+            ),
+            "cartera_bruta": [100.0, 121.0, 133.1, 500.0, 0.0, 100.0],
+        }
+    )
 
     resultado = construir_crecimiento_cartera(datos)
 
@@ -164,13 +162,9 @@ def test_crecimiento_cartera_controla_meses_y_ceros():
 
     assert pd.isna(marzo_a["crecimiento_cartera_1m_pct"])
 
-    assert abril_a["crecimiento_cartera_1m_pct"] == pytest.approx(
-        10.0
-    )
+    assert abril_a["crecimiento_cartera_1m_pct"] == pytest.approx(10.0)
 
-    assert abril_a["crecimiento_cartera_3m_pct"] == pytest.approx(
-        33.1
-    )
+    assert abril_a["crecimiento_cartera_3m_pct"] == pytest.approx(33.1)
 
     # Cartera anterior igual a cero
     assert pd.isna(febrero_c["crecimiento_cartera_1m_pct"])
@@ -179,40 +173,34 @@ def test_crecimiento_cartera_controla_meses_y_ceros():
 def test_transformaciones_financieras_controlan_invalidos():
     """Valida logaritmos, ceros, negativos e infinitos."""
 
-    datos = pd.DataFrame({
-        "cartera_bruta": [110.0, 0.0, 100.0],
-        "cartera_bruta_lag_1": [100.0, 100.0, 0.0],
-        "cartera_bruta_lag_3": [100.0, 100.0, 50.0],
-        "liquidez": [0.0, -1.0, 10.0],
-        "cartera_depositos": [1.0, 0.0, np.inf],
-    })
+    datos = pd.DataFrame(
+        {
+            "cartera_bruta": [110.0, 0.0, 100.0],
+            "cartera_bruta_lag_1": [100.0, 100.0, 0.0],
+            "cartera_bruta_lag_3": [100.0, 100.0, 50.0],
+            "liquidez": [0.0, -1.0, 10.0],
+            "cartera_depositos": [1.0, 0.0, np.inf],
+        }
+    )
 
     columnas_originales = datos.columns.tolist()
 
     resultado = construir_transformaciones_financieras(datos)
 
     # Crecimiento válido
-    assert resultado.loc[
-        0, "crecimiento_log_cartera_1m"
-    ] == pytest.approx(np.log(1.1))
+    assert resultado.loc[0, "crecimiento_log_cartera_1m"] == pytest.approx(np.log(1.1))
 
     # Cartera actual o anterior igual a cero
-    assert pd.isna(
-        resultado.loc[1, "crecimiento_log_cartera_1m"]
-    )
+    assert pd.isna(resultado.loc[1, "crecimiento_log_cartera_1m"])
 
-    assert pd.isna(
-        resultado.loc[2, "crecimiento_log_cartera_1m"]
-    )
+    assert pd.isna(resultado.loc[2, "crecimiento_log_cartera_1m"])
 
     # Ceros válidos y liquidez negativa
     assert resultado.loc[0, "liquidez_log"] == 0.0
     assert pd.isna(resultado.loc[1, "liquidez_log"])
 
     # Valores infinitos
-    assert pd.isna(
-        resultado.loc[2, "cartera_depositos_log"]
-    )
+    assert pd.isna(resultado.loc[2, "cartera_depositos_log"])
 
     # La función no modifica las columnas del DataFrame recibido
     assert datos.columns.tolist() == columnas_originales
@@ -221,15 +209,18 @@ def test_transformaciones_financieras_controlan_invalidos():
 def test_targets_rechazan_duplicados():
     """Una combinación banco-mes debe ser única."""
 
-    panel = pd.DataFrame({
-        "banco": ["A", "A"],
-        "fecha": pd.to_datetime([
-            "2020-01-01",
-            "2020-01-01",
-        ]),
-        "morosidad_total": [0.03, 0.04],
-    })
+    panel = pd.DataFrame(
+        {
+            "banco": ["A", "A"],
+            "fecha": pd.to_datetime(
+                [
+                    "2020-01-01",
+                    "2020-01-01",
+                ]
+            ),
+            "morosidad_total": [0.03, 0.04],
+        }
+    )
 
     with pytest.raises(ValueError, match="duplicados"):
         construir_targets(panel)
-
