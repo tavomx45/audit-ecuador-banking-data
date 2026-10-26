@@ -346,3 +346,18 @@ def construir_transformaciones_financieras(
         df[nueva] = np.log1p(valores.where(validos))
 
     return df
+
+
+def construir_dataset_multihorizonte(
+    panel: pd.DataFrame,
+) -> pd.DataFrame:
+    """Construye las características multihorizonte del panel bancario."""
+
+    datos = construir_targets(panel)
+    datos = construir_rezagos_y_variaciones(datos)
+    datos = construir_estadisticas_moviles(datos)
+    datos = construir_caracteristicas_estacionales(datos)
+    datos = construir_crecimiento_cartera(datos)
+    datos = construir_transformaciones_financieras(datos)
+
+    return datos

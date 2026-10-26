@@ -4,14 +4,7 @@ import pandas as pd
 import pytest
 
 from src import pipeline
-from src.features import (
-    construir_caracteristicas_estacionales,
-    construir_crecimiento_cartera,
-    construir_estadisticas_moviles,
-    construir_rezagos_y_variaciones,
-    construir_targets,
-    construir_transformaciones_financieras,
-)
+from src.features import construir_dataset_multihorizonte
 
 # ==================================================
 # 1. FIXTURE: PANEL BANCARIO ARTIFICIAL
@@ -66,17 +59,7 @@ def panel_sintetico():
 def datos_integrados(panel_sintetico):
     """Ejecuta las seis transformaciones consecutivamente."""
 
-    datos = construir_targets(panel_sintetico)
-
-    datos = construir_rezagos_y_variaciones(datos)
-
-    datos = construir_estadisticas_moviles(datos)
-
-    datos = construir_caracteristicas_estacionales(datos)
-
-    datos = construir_crecimiento_cartera(datos)
-
-    datos = construir_transformaciones_financieras(datos)
+    datos = construir_dataset_multihorizonte(panel_sintetico)
 
     return panel_sintetico, datos
 
@@ -208,3 +191,43 @@ def test_almacenamiento_en_directorio_temporal(
     )
 
     assert reporte_guardado["observaciones"].sum() == 13
+
+
+def test_orquestador_es_determinista_y_no_modifica_entrada(
+    panel_sintetico,
+):
+    """El resultado no depende del orden de entrada ni modifica el panel."""
+
+    panel_original = panel_sintetico.copy(deep=True)
+
+    # Primera ejecución
+    resultado_a = construir_dataset_multihorizonte(panel_sintetico)
+
+    # Segunda ejecución con las filas desordenadas
+    panel_desordenado = panel_sintetico.sample(
+        frac=1,
+        random_state=42,
+    )
+
+    resultado_b = construir_dataset_multihorizonte(panel_desordenado)
+
+    # La función no debe modificar el DataFrame recibido
+    pd.testing.assert_frame_equal(
+        panel_sintetico,
+        panel_original,
+    )
+
+    # Las dimensiones deben conservarse
+    assert resultado_a.shape == (13, 46)
+    assert resultado_b.shape == (13, 46)
+
+    # Ambos resultados deben ser equivalentes
+    claves = ["banco", "fecha"]
+
+    def ordenar(datos):
+        return datos.sort_values(claves).reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(
+        ordenar(resultado_a),
+        ordenar(resultado_b),
+    )

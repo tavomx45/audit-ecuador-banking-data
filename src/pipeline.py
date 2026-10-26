@@ -156,21 +156,9 @@ def main() -> None:
 
     print("\n4. INGENIERÍA DE CARACTERÍSTICAS")
 
-    from src.features import (
-        construir_caracteristicas_estacionales,
-        construir_crecimiento_cartera,
-        construir_estadisticas_moviles,
-        construir_rezagos_y_variaciones,
-        construir_targets,
-        construir_transformaciones_financieras,
-    )
+    from src.features import construir_dataset_multihorizonte
 
-    features = construir_targets(panel)
-    features = construir_rezagos_y_variaciones(features)
-    features = construir_estadisticas_moviles(features)
-    features = construir_caracteristicas_estacionales(features)
-    features = construir_crecimiento_cartera(features)
-    features = construir_transformaciones_financieras(features)
+    features = construir_dataset_multihorizonte(panel)
 
     print("Dimensiones:", features.shape)
     print("Instituciones:", features["banco"].nunique())
