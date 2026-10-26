@@ -1,0 +1,82 @@
+name: Python CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-and-tests:
+    name: Ruff and pytest
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+
+      # ==========================================
+      # 1. DESCARGAR EL CÓDIGO DEL REPOSITORIO
+      # ==========================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # ==========================================
+      # 2. RECONSTRUIR EL ENTORNO MICROMAMBA
+      # ==========================================
+
+      - name: Set up Micromamba
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment.yml
+          environment-name: morosidad-bancos-ecuador
+          init-shell: bash
+          cache-environment: true
+
+      # ==========================================
+      # 3. VERIFICAR ENTORNO
+      # ==========================================
+
+      - name: Check Python and tools
+        run: |
+          python --version
+          python -m pytest --version
+          ruff --version
+
+      # ==========================================
+      # 4. ANÁLISIS ESTÁTICO
+      # ==========================================
+
+      - name: Ruff lint
+        run: |
+          ruff check src/ tests/
+
+      # ==========================================
+      # 5. FORMATO DEL CÓDIGO
+      # ==========================================
+
+      - name: Ruff format
+        run: |
+          ruff format --check src/ tests/
+
+      # ==========================================
+      # 6. PRUEBAS AUTOMATIZADAS
+      # ==========================================
+
+      - name: Run pytest
+        run: |
+          python -m pytest tests/ -v
