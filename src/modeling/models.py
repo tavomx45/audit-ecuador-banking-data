@@ -122,3 +122,53 @@ def construir_modelo(
             ("modelo", estimador),
         ]
     )
+
+
+# ======================================================
+# CONFIGURACIÓN FINAL CANDIDATA
+# Seleccionada mediante CV temporal de desarrollo
+# ======================================================
+
+
+ESTRATEGIA_POR_HORIZONTE = {
+    1: "RandomForest_delta_flexible",
+    2: "Persistencia_estacional",
+    3: "Persistencia_estacional",
+}
+
+
+PARAMETROS_RF_FLEXIBLE = {
+    "n_estimators": 150,
+    "max_depth": 14,
+    "min_samples_leaf": 3,
+    "max_features": 0.7,
+}
+
+
+def construir_rf_delta_flexible(numericas):
+    """Construye el RF flexible usando el pipeline existente."""
+
+    modelo = construir_modelo(
+        "RandomForest",
+        numericas,
+    )
+
+    pasos_rf = [
+        nombre
+        for nombre, estimador in modelo.named_steps.items()
+        if isinstance(estimador, RandomForestRegressor)
+    ]
+
+    if len(pasos_rf) != 1:
+        raise ValueError("Se esperaba un único RandomForestRegressor.")
+
+    nombre_rf = pasos_rf[0]
+
+    parametros = {
+        f"{nombre_rf}__{clave}": valor
+        for clave, valor in PARAMETROS_RF_FLEXIBLE.items()
+    }
+
+    modelo.set_params(**parametros)
+
+    return modelo

@@ -4,7 +4,12 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
-from src.modeling.models import NOMBRES_MODELOS, construir_modelo
+from src.modeling.forecast import entrenar_y_predecir_horizonte
+from src.modeling.models import (
+    ESTRATEGIA_POR_HORIZONTE,
+    NOMBRES_MODELOS,
+    construir_modelo,
+)
 
 
 def evaluar_modelos_cv(
@@ -165,3 +170,128 @@ def evaluar_modelos_cv(
     )
 
     return detalle, resumen
+
+
+def evaluar_sistema_final_cv(datasets, folds_cv):
+    """Evalúa el sistema híbrido mediante validación temporal.
+
+    No utiliza el conjunto Test.
+
+    Returns
+    -------
+    detalle : pd.DataFrame
+        Métricas por horizonte y fold.
+    predicciones : pd.DataFrame
+        Pronósticos individuales de validación.
+    """
+
+    resultados = []
+    predicciones = []
+
+    for h in (1, 2, 3):
+        config = datasets[h]
+        datos = config["desarrollo"]
+
+        target = config["target"]
+        fecha_target = config["fecha_target"]
+
+        estrategia = ESTRATEGIA_POR_HORIZONTE[h]
+
+        for fold in folds_cv[h]:
+            anio = fold["fold"]
+
+            train = datos.loc[fold["train_idx"]].copy()
+
+            val = datos.loc[fold["val_idx"]].copy()
+
+            if train.empty or val.empty:
+                raise ValueError(f"Fold vacío: horizonte={h}, año={anio}")
+
+            # Comprobar que las etiquetas de entrenamiento
+            # no alcancen el período de validación.
+            if not (train[fecha_target].max() < val["fecha"].min()):
+                raise ValueError(f"Solapamiento temporal: h={h}, fold={anio}")
+
+            y_real = val[target].to_numpy(dtype=float)
+
+            if not np.isfinite(y_real).all():
+                raise ValueError(f"Target no finito: h={h}, fold={anio}")
+
+            # Utiliza la estrategia seleccionada
+            # para cada horizonte.
+            y_pred = entrenar_y_predecir_horizonte(
+                horizonte=h,
+                entrenamiento=train,
+                validacion=val,
+                target=target,
+                fecha_target=fecha_target,
+                numericas=config["numericas"],
+                predictoras=config["predictoras"],
+            )
+
+            y_pred = np.asarray(y_pred, dtype=float).reshape(-1)
+
+            if len(y_pred) != len(y_real):
+                raise ValueError(
+                    "Predicciones y observaciones tienen tamaños diferentes."
+                )
+
+            if not np.isfinite(y_pred).all():
+                raise ValueError(f"Predicciones no finitas: h={h}, fold={anio}")
+
+            errores = y_real - y_pred
+
+            mae = float(np.mean(np.abs(errores)))
+            rmse = float(np.sqrt(np.mean(errores**2)))
+            sesgo = float(np.mean(errores))
+
+            resultados.append(
+                {
+                    "horizonte": h,
+                    "fold": anio,
+                    "estrategia": estrategia,
+                    "observaciones": len(val),
+                    "mae_pp": mae,
+                    "rmse_pp": rmse,
+                    "sesgo_pp": sesgo,
+                }
+            )
+
+            predicciones.append(
+                pd.DataFrame(
+                    {
+                        "horizonte": h,
+                        "fold": anio,
+                        "estrategia": estrategia,
+                        "banco": val["banco"].to_numpy(),
+                        "fecha": val["fecha"].to_numpy(),
+                        "fecha_objetivo": val[fecha_target].to_numpy(),
+                        "morosidad_actual": val["morosidad_pp"].to_numpy(dtype=float),
+                        "y_real": y_real,
+                        "y_pred": y_pred,
+                        "error_pp": errores,
+                        "error_abs_pp": np.abs(errores),
+                    }
+                )
+            )
+
+    detalle = pd.DataFrame(resultados)
+
+    predicciones = pd.concat(
+        predicciones,
+        ignore_index=True,
+    )
+
+    if len(detalle) != 15:
+        raise ValueError("Se esperaban 15 evaluaciones temporales.")
+
+    if detalle.duplicated(["horizonte", "fold"]).any():
+        raise ValueError("Se encontraron folds duplicados.")
+
+    if predicciones.duplicated(["horizonte", "fold", "banco", "fecha"]).any():
+        raise ValueError("Se encontraron predicciones duplicadas.")
+
+    if detalle["observaciones"].sum() != len(predicciones):
+        raise ValueError("Las cantidades de observaciones no coinciden.")
+
+    return detalle, predicciones

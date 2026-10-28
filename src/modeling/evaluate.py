@@ -165,3 +165,110 @@ def comparar_modelos_cv(
     resumen["posicion"] = resumen.groupby("horizonte").cumcount() + 1
 
     return detalle, resumen
+
+
+def evaluar_sistema_final_cv(detalle_final, detalle_baselines):
+    """Compara el sistema híbrido con persistencia estacional.
+
+    Ambos métodos deben haberse evaluado sobre
+    los mismos horizontes y folds temporales.
+    """
+
+    claves = ["horizonte", "fold"]
+
+    # ==================================================
+    # 1. PREPARAR BASELINE ESTACIONAL
+    # ==================================================
+
+    baseline = detalle_baselines.loc[
+        detalle_baselines["modelo"] == "Persistencia_estacional",
+        [
+            "horizonte",
+            "fold",
+            "observaciones",
+            "mae_pp",
+        ],
+    ].copy()
+
+    baseline = baseline.rename(
+        columns={
+            "observaciones": "observaciones_baseline",
+            "mae_pp": "mae_estacional",
+        }
+    )
+
+    if baseline.duplicated(claves).any():
+        raise ValueError("El baseline contiene folds duplicados.")
+
+    if detalle_final.duplicated(claves).any():
+        raise ValueError("El sistema final contiene folds duplicados.")
+
+    # ==================================================
+    # 2. ALINEAR AMBAS EVALUACIONES
+    # ==================================================
+
+    comparacion = detalle_final.merge(
+        baseline,
+        on=claves,
+        how="inner",
+        validate="one_to_one",
+    )
+
+    if len(comparacion) != len(detalle_final):
+        raise ValueError("Faltan folds del baseline estacional.")
+
+    if not (
+        comparacion["observaciones"] == comparacion["observaciones_baseline"]
+    ).all():
+        raise ValueError(
+            "Los modelos no tienen el mismo número de observaciones por fold."
+        )
+
+    # ==================================================
+    # 3. DIFERENCIAS PAREADAS
+    # ==================================================
+
+    comparacion["ventaja_pp"] = comparacion["mae_estacional"] - comparacion["mae_pp"]
+
+    comparacion["mejora_pct"] = (
+        100 * comparacion["ventaja_pp"] / comparacion["mae_estacional"]
+    )
+
+    tolerancia = 1e-10
+
+    comparacion["gana"] = comparacion["ventaja_pp"] > tolerancia
+
+    comparacion["empata"] = comparacion["ventaja_pp"].abs() <= tolerancia
+
+    comparacion["pierde"] = comparacion["ventaja_pp"] < -tolerancia
+
+    # ==================================================
+    # 4. RESUMEN POR HORIZONTE
+    # ==================================================
+
+    resumen = comparacion.groupby("horizonte", as_index=False).agg(
+        estrategia=("estrategia", "first"),
+        mae_medio=("mae_pp", "mean"),
+        mae_std=("mae_pp", "std"),
+        rmse_medio=("rmse_pp", "mean"),
+        sesgo_medio=("sesgo_pp", "mean"),
+        mae_estacional=("mae_estacional", "mean"),
+        folds=("fold", "count"),
+        folds_ganados=("gana", "sum"),
+        folds_empatados=("empata", "sum"),
+        folds_perdidos=("pierde", "sum"),
+    )
+
+    resumen["ventaja_media_pp"] = resumen["mae_estacional"] - resumen["mae_medio"]
+
+    resumen["mejora_vs_estacional_pct"] = (
+        100 * resumen["ventaja_media_pp"] / resumen["mae_estacional"]
+    )
+
+    if len(resumen) != 3:
+        raise ValueError("Se esperaban tres horizontes.")
+
+    if not (resumen["folds"] == 5).all():
+        raise ValueError("Cada horizonte debe tener cinco folds.")
+
+    return resumen, comparacion
