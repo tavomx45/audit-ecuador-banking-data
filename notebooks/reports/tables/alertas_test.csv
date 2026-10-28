@@ -1,0 +1,5 @@
+umbral_pp,modelo,eventos_reales,alertas_emitidas,verdaderos_positivos,falsos_positivos,falsos_negativos,precision,recall
+0.5,RandomForest,23,8,5,3,18,0.625,0.21739130434782608
+0.5,Persistencia_estacional,23,0,0,0,23,,0.0
+1.0,RandomForest,9,3,1,2,8,0.3333333333333333,0.1111111111111111
+1.0,Persistencia_estacional,9,0,0,0,9,,0.0

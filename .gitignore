@@ -19,3 +19,9 @@ __pycache__/
 
 # Archivos del sistema
 .DS_Store
+
+# MLflow local
+mlflow.db*
+mlruns/
+mlartifacts/
+mlflow-artifacts/
